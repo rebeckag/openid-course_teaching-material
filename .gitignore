@@ -1,0 +1,10 @@
+# Python
+*.pyc
+.idea/
+
+# Java
+.settings/
+.project
+.classpath
+target/
+bin/

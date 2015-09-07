@@ -5,8 +5,10 @@ stop on shutdown
 
 respawn
 
+
 chdir {{ client_registration_dir }}
 
+env OIDC_CLIENT_DB="{{ client_db }}"
 exec {{ client_registration_virtualenv_dir }}/bin/gunicorn \
     --bind unix:/tmp/client_registration.socket \
     server:wsgi

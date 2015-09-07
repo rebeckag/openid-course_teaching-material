@@ -7,6 +7,7 @@ respawn
 
 chdir {{ provider_dir }}
 
+env OIDC_CLIENT_DB="{{ client_db }}"
 exec {{ provider_virtualenv_dir }}/bin/gunicorn \
     --bind unix:/tmp/provider.socket \
     server:wsgi

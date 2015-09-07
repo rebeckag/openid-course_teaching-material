@@ -7,6 +7,7 @@
   vars:
     host: localhost
     client_registration_vhost: /client_registration
+    client_db: "{{ provider_dir}}/client_db"
 
   tasks:
     - name: add nginx config to sites-available

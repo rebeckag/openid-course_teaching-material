@@ -6,6 +6,7 @@ import sys
 import traceback
 from urllib.parse import parse_qs, urlparse, splitquery
 import re
+import os
 
 import yaml
 from mako.lookup import TemplateLookup
@@ -241,7 +242,9 @@ def setup():
     URLS.append((r'^verify', make_auth_verify(authn.verify)))
 
     authz = AuthzHandling()
-    cdb = shelve_wrapper.open("client_db", writeback=True)
+    client_db_path = os.environ.get("OIDC_CLIENT_DB", "client_db")
+    LOGGER.info("Using db: {}".format(client_db_path))
+    cdb = shelve_wrapper.open(client_db_path, writeback=True)
     global OAS
     OAS = NonHttpsProvider(issuer, SessionDB(issuer), cdb, ac, None,
                            authz, verify_client, rndstr(16))

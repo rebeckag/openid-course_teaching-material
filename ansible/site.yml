@@ -1,0 +1,22 @@
+- hosts: all
+
+  roles:
+    - {role: provider, sudo: yes }
+    - {role: client_registration, sudo: yes }
+
+  vars:
+    host: localhost
+    client_registration_vhost: /client_registration
+
+  tasks:
+    - name: add nginx config to sites-available
+      template: src=templates/nginx.conf.j2
+                dest=/etc/nginx/sites-available/{{ host }}
+      become: yes
+
+    - name: add symlink in nginx sites-enabled
+      file: src=/etc/nginx/sites-available/{{ host }}
+             dest=/etc/nginx/sites-enabled/{{ host }} state=link
+      become: yes
+      notify:
+        - restart nginx

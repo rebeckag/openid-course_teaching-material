@@ -1,0 +1,12 @@
+description "OpenID Connect Provider"
+
+start on net-device-up
+stop on shutdown
+
+respawn
+
+chdir {{ provider_dir }}
+
+exec {{ provider_virtualenv_dir }}/bin/gunicorn \
+    --bind unix:/tmp/provider.socket \
+    server:wsgi

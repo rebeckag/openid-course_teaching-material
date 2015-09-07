@@ -1,0 +1,17 @@
+- name: make sure source folder exists
+  file: path={{ client_registration_dir }} state=directory
+
+- name: fetch latest source
+  git: repo=https://github.com/its-dirg/oicscrs dest={{ client_registration_dir }} version=cleanup
+
+- name: setup virtualenv
+  include: ../../../tasks/virtualenv.yml
+  vars:
+    virtualenv_dir: "{{ client_registration_virtualenv_dir }}"
+    source_dir: "{{ client_registration_dir }}"
+
+- name: create Upstart script
+  template: src=client_registration-gunicorn-upstart.conf.j2
+            dest=/etc/init/{{ client_registration_service }}.conf
+  notify:
+    - restart client_registration

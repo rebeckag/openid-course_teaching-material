@@ -1,0 +1,19 @@
+- name: add nginx repository
+  apt_repository: repo=ppa:nginx/stable
+
+- name: install required packages
+  apt: pkg=nginx,git,libffi-dev,libssl-dev
+
+- name: install Python 3.4.3
+  script: install_python_3-4-3.sh creates=/python3.4.3
+
+- name: install pip
+  command: python3 -m ensurepip
+
+- name: install virtualenv
+  command: pip3 install virtualenv
+
+- name: remove default nginx config
+  file: path=/etc/nginx/sites-enabled/default state=absent
+  notify:
+      - restart nginx

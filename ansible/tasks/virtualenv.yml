@@ -1,0 +1,10 @@
+- name: create virtualenv
+  command: virtualenv {{ virtualenv_dir }} --python=python3
+  args:
+    creates: "{{ virtualenv_dir }}/bin/pip"
+
+- name: install gunicorn in virtualenv
+  command: "{{ virtualenv_dir }}/bin/pip install gunicorn"
+
+- name: install requirements.txt in virtualenv
+  command: "{{ virtualenv_dir }}/bin/pip install -r {{ source_dir }}/requirements.txt"

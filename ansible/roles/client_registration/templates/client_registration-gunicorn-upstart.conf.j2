@@ -1,0 +1,12 @@
+description "Static client registration service for OpenID Connect Provider"
+
+start on net-device-up
+stop on shutdown
+
+respawn
+
+chdir {{ client_registration_dir }}
+
+exec {{ client_registration_virtualenv_dir }}/bin/gunicorn \
+    --bind unix:/tmp/client_registration.socket \
+    server:wsgi

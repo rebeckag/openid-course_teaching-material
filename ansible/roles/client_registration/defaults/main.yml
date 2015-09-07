@@ -1,0 +1,3 @@
+client_registration_dir: /client_registration/source
+client_registration_virtualenv_dir: /client_registration/virtualenv
+client_registration_service: client_registration-{{ host }}

@@ -1,0 +1,2 @@
+- name: restart provider
+  service: name={{ provider_service }} state=restarted

@@ -1,0 +1,13 @@
+- name: copy local source
+  copy: src=../provider/ dest={{ provider_dir }}
+
+- include: ../../../tasks/virtualenv.yml
+  vars:
+    virtualenv_dir: "{{ provider_virtualenv_dir }}"
+    source_dir: "{{ provider_dir }}"
+
+- name: create Upstart script
+  template: src=provider-gunicorn-upstart.conf.j2
+            dest=/etc/init/{{ provider_service }}.conf
+  notify:
+    - restart provider

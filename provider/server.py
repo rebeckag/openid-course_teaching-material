@@ -59,7 +59,7 @@ def add_endpoints(endpoints, endpoint_functions):
     global URLS
 
     for endp, func in zip(endpoints, endpoint_functions):
-        URLS.append(("^%s" % endp.etype, endp))
+        URLS.append(("^%s" % endp.etype, func))
 
 
 ROOT = './'

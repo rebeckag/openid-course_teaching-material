@@ -8,3 +8,9 @@
 .classpath
 target/
 bin/
+
+# Provider
+provider/*.log
+provider/client_db*
+provider/pyoidc*
+provider/static/jwks.json

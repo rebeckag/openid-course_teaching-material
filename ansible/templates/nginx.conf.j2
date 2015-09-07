@@ -10,11 +10,11 @@ server {
         proxy_pass http://unix:/tmp/provider.socket;
     }
 
-     location = {{ client_registration_vhost }} {
+    location = {{ client_registration_vhost }} {
         return 301 http://$http_host$request_uri/; # force trailing slash to make relative urls work
     }
 
-    location {{ client_registration_vhost }}/static {
+    location ^~ {{ client_registration_vhost }}/static {
         alias {{ client_registration_dir }}/static;
     }
 

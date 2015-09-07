@@ -243,8 +243,8 @@ def setup():
     authz = AuthzHandling()
     cdb = shelve_wrapper.open("client_db", writeback=True)
     global OAS
-    OAS = Provider(issuer, SessionDB(issuer), cdb, ac, None,
-                   authz, verify_client, rndstr(16))
+    OAS = NonHttpsProvider(issuer, SessionDB(issuer), cdb, ac, None,
+                           authz, verify_client, rndstr(16))
     OAS.baseurl = issuer
     OAS.userinfo = UserInfo(config["userdb"])
     # Additional endpoints the OpenID Connect Provider should answer on

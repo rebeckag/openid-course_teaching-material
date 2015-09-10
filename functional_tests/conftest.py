@@ -9,9 +9,9 @@ from selenium import webdriver
 
 @pytest.yield_fixture
 def browser():
-    b = webdriver.Firefox()
+    b = webdriver.PhantomJS()
     yield b
-    # b.quit()
+    b.quit()
 
 
 def pytest_addoption(parser):

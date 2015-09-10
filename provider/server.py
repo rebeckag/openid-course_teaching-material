@@ -244,7 +244,7 @@ def setup():
     authz = AuthzHandling()
     client_db_path = os.environ.get("OIDC_CLIENT_DB", "client_db")
     LOGGER.info("Using db: {}".format(client_db_path))
-    cdb = shelve_wrapper.open(client_db_path, writeback=True)
+    cdb = shelve_wrapper.open(client_db_path)
     global OAS
     OAS = NonHttpsProvider(issuer, SessionDB(issuer), cdb, ac, None,
                            authz, verify_client, rndstr(16))
@@ -284,25 +284,18 @@ config = setup()
 wsgi = bytes_middleware(application)
 
 if __name__ == "__main__":
-    import cherrypy
+    from wsgiref.simple_server import make_server
+    from werkzeug.wsgi import SharedDataMiddleware
+
+    app = SharedDataMiddleware(wsgi, {
+        '/static': os.path.join(os.path.dirname(__file__), 'static')
+    })
 
     host = urlparse(config["baseurl"]).netloc
     port = int(host.split(":", 1)[1])
 
-    cherrypy.config.update({
-        'server.socket_host': '0.0.0.0',
-        'server.socket_port': port
-    })
+    httpd = make_server('', port, app)
+    print("Serving HTTP on port {}...".format(port))
 
-    cherrypy.tree.mount(None, '/static', {
-        '/': {
-            'tools.staticdir.root': os.path.abspath(os.path.dirname(__file__)),
-            'tools.staticdir.dir': "static",
-            'tools.staticdir.on': True,
-        }
-    })
-
-    cherrypy.tree.graft(wsgi, '/')
-
-    cherrypy.engine.start()
-    cherrypy.engine.block()
+    # Respond to requests until process is killed
+    httpd.serve_forever()

@@ -1,5 +1,4 @@
 # pylint: disable=missing-docstring
-import json
 from urllib.parse import urlparse
 
 import pytest
@@ -9,7 +8,7 @@ from selenium import webdriver
 
 @pytest.yield_fixture
 def browser():
-    b = webdriver.PhantomJS()
+    b = webdriver.Firefox()
     yield b
     b.quit()
 
@@ -31,3 +30,9 @@ def server_url(request):
 def provider_info(server_url):
     resp = requests.get(server_url + "/.well-known/openid-configuration")
     return resp.json()
+
+
+def fill_login_details(browser):
+    browser.find_element_by_name("login").send_keys("diana")
+    browser.find_element_by_name("password").send_keys("krall")
+    browser.find_element_by_name("form.commit").click()

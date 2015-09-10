@@ -2,6 +2,8 @@ from urllib.parse import urlparse
 
 from oic.oic.message import AuthorizationRequest, AuthorizationResponse, IdToken
 
+from conftest import fill_login_details
+
 
 def test_service_adds_trailing_slash(server_url, browser):
     client_reg_url = server_url + "/client_registration"
@@ -34,9 +36,7 @@ def test_static_client_registration(server_url, provider_info, browser):
     request = auth_req.request(provider_info["authorization_endpoint"])
     browser.get(request)
 
-    browser.find_element_by_name("login").send_keys("diana")
-    browser.find_element_by_name("password").send_keys("krall")
-    browser.find_element_by_name("form.commit").click()
+    fill_login_details(browser)
 
     urlencoded_resp = urlparse(browser.current_url).fragment
     auth_resp = AuthorizationResponse().from_urlencoded(urlencoded_resp)

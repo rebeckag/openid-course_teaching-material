@@ -282,14 +282,22 @@ setup()
 wsgi = bytes_middleware(application)
 
 if __name__ == "__main__":
-    from cherrypy import wsgiserver
+    import cherrypy
 
-    server = wsgiserver.CherryPyWSGIServer(
-        ('0.0.0.0', 8000), wsgi,
-        server_name='www.cherrypy.example')
+    cherrypy.config.update({
+        'server.socket_host': '0.0.0.0',
+        'server.socket_port': 8000
+    })
 
-    try:
-        print("Starting..")
-        server.start()
-    except KeyboardInterrupt:
-        server.stop()
+    cherrypy.tree.mount(None, '/static', {
+        '/': {
+            'tools.staticdir.root': os.path.abspath(os.path.dirname(__file__)),
+            'tools.staticdir.dir': "static",
+            'tools.staticdir.on': True,
+        }
+    })
+
+    cherrypy.tree.graft(wsgi, '/')
+
+    cherrypy.engine.start()
+    cherrypy.engine.block()

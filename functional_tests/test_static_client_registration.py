@@ -1,9 +1,7 @@
-import json
 from urllib.parse import urlparse
 
 from oic.oic.message import AuthorizationRequest, AuthorizationResponse, IdToken
 import pytest
-import requests
 from selenium import webdriver
 
 
@@ -20,7 +18,7 @@ def test_service_adds_trailing_slash(server_url, browser):
     assert browser.current_url == client_reg_url + "/"
 
 
-def test_static_client_registration(server_url, browser):
+def test_static_client_registration(server_url, provider_info, browser):
     redirect_uri = "http://localhost:8090"
     browser.get(server_url + "/client_registration")
     new_url_input = browser.find_element_by_xpath("/html/body/div/div/div[1]/div[1]/form/div/input")
@@ -32,8 +30,6 @@ def test_static_client_registration(server_url, browser):
     submit_btn.click()
 
     client_credentials = get_client_credentials_from_page(browser)
-
-    provider_info = get_provider_info(server_url)
 
     args = {
         "client_id": client_credentials["client_id"],
@@ -57,11 +53,6 @@ def test_static_client_registration(server_url, browser):
     assert browser.current_url.startswith(redirect_uri)
     assert auth_resp["state"] == "state0"
     assert idt["nonce"] == "nonce0"
-
-
-def get_provider_info(issuer):
-    resp = requests.get(issuer + "/.well-known/openid-configuration")
-    return json.loads(resp.text)
 
 
 def get_client_credentials_from_page(browser):

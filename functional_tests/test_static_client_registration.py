@@ -1,15 +1,6 @@
 from urllib.parse import urlparse
 
 from oic.oic.message import AuthorizationRequest, AuthorizationResponse, IdToken
-import pytest
-from selenium import webdriver
-
-
-@pytest.yield_fixture
-def browser():
-    b = webdriver.PhantomJS()
-    yield b
-    b.quit()
 
 
 def test_service_adds_trailing_slash(server_url, browser):

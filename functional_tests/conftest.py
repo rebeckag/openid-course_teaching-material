@@ -4,6 +4,14 @@ from urllib.parse import urlparse
 
 import pytest
 import requests
+from selenium import webdriver
+
+
+@pytest.yield_fixture
+def browser():
+    b = webdriver.Firefox()
+    yield b
+    # b.quit()
 
 
 def pytest_addoption(parser):

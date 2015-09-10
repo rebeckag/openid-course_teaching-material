@@ -277,16 +277,21 @@ def setup():
         f.write(json.dumps(public_jwks))
     OAS.jwks_uri.append("%s/%s" % (OAS.baseurl, filename))
 
+    return config
 
-setup()
+
+config = setup()
 wsgi = bytes_middleware(application)
 
 if __name__ == "__main__":
     import cherrypy
 
+    host = urlparse(config["baseurl"]).netloc
+    port = int(host.split(":", 1)[1])
+
     cherrypy.config.update({
         'server.socket_host': '0.0.0.0',
-        'server.socket_port': 8000
+        'server.socket_port': port
     })
 
     cherrypy.tree.mount(None, '/static', {

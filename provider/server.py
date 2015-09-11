@@ -4,7 +4,7 @@ import json
 import logging
 import sys
 import traceback
-from urllib.parse import parse_qs, urlparse, splitquery
+from urllib.parse import parse_qs, urlparse
 import re
 import os
 
@@ -22,11 +22,11 @@ from oic.utils.webfinger import WebFinger
 from oic.utils.webfinger import OIC_ISSUER
 from oic.utils.authn.authn_context import AuthnBroker, make_auth_verify
 from oic.utils.sdb import SessionDB
-from oic.oic.provider import Provider, InvalidRedirectURIError
 from oic.oic.provider import AuthorizationEndpoint
 from oic.oic.provider import TokenEndpoint
 from oic.oic.provider import UserinfoEndpoint
 from oic.oic.provider import RegistrationEndpoint
+from provider.course_provider import CourseProvider
 
 LOGGER = logging.getLogger("")
 LOGFILE_NAME = 'oc.log'
@@ -67,33 +67,6 @@ ROOT = './'
 
 LOOKUP = TemplateLookup(directories=['templates'], input_encoding='utf-8',
                         output_encoding='utf-8')
-
-
-class NonHttpsProvider(Provider):
-    def _verify_redirect_uris(self, registration_request):
-        verified_redirect_uris = []
-        must_https = False  # don't verify https!
-
-        for uri in registration_request["redirect_uris"]:
-            p = urlparse(uri)
-            if registration_request["application_type"] == "native" and p.scheme == "http":
-                if p.hostname != "localhost":
-                    raise InvalidRedirectURIError(
-                        "Http redirect_uri must use localhost")
-            elif must_https and p.scheme != "https":
-                raise InvalidRedirectURIError(
-                    "None https redirect_uri not allowed")
-            elif p.fragment:
-                raise InvalidRedirectURIError(
-                    "redirect_uri contains fragment")
-
-            base, query = splitquery(uri)
-            if query:
-                verified_redirect_uris.append((base, parse_qs(query)))
-            else:
-                verified_redirect_uris.append((base, query))
-
-        return verified_redirect_uris
 
 
 # noinspection PyUnusedLocal
@@ -246,8 +219,8 @@ def setup():
     LOGGER.info("Using db: {}".format(client_db_path))
     cdb = shelve_wrapper.open(client_db_path)
     global OAS
-    OAS = NonHttpsProvider(issuer, SessionDB(issuer), cdb, ac, None,
-                           authz, verify_client, rndstr(16))
+    OAS = CourseProvider(issuer, SessionDB(issuer), cdb, ac, None,
+                         authz, verify_client, rndstr(16))
     OAS.baseurl = issuer
     OAS.userinfo = UserInfo(config["userdb"])
     # Additional endpoints the OpenID Connect Provider should answer on

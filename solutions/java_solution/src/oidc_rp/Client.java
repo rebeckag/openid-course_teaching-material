@@ -14,6 +14,8 @@ import java.util.Scanner;
 
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
+import oidc_rp.Defaults.AuthReqDefault;
+import oidc_rp.Defaults.RegistrationReqDefault;
 import spark.Request;
 import spark.Response;
 import spark.Session;
@@ -27,14 +29,11 @@ import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
 import com.nimbusds.oauth2.sdk.ErrorObject;
 import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.ResponseType;
-import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.SerializeException;
 import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.TokenResponse;
-import com.nimbusds.oauth2.sdk.client.ClientRegistrationErrorResponse;
-import com.nimbusds.oauth2.sdk.client.ClientRegistrationResponse;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
@@ -45,7 +44,6 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.AuthenticationResponse;
 import com.nimbusds.openid.connect.sdk.AuthenticationResponseParser;
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse;
-import com.nimbusds.openid.connect.sdk.ClaimsRequest;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCAccessTokenResponse;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
@@ -53,20 +51,18 @@ import com.nimbusds.openid.connect.sdk.UserInfoErrorResponse;
 import com.nimbusds.openid.connect.sdk.UserInfoRequest;
 import com.nimbusds.openid.connect.sdk.UserInfoResponse;
 import com.nimbusds.openid.connect.sdk.UserInfoSuccessResponse;
-import com.nimbusds.openid.connect.sdk.claims.ClaimRequirement;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientInformation;
-import com.nimbusds.openid.connect.sdk.rp.OIDCClientInformationResponse;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
-import com.nimbusds.openid.connect.sdk.rp.OIDCClientRegistrationRequest;
-import com.nimbusds.openid.connect.sdk.rp.OIDCClientRegistrationResponseParser;
 import com.nimbusds.openid.connect.sdk.util.DefaultJWTDecoder;
 
 public class Client {
+	// TODO specify the correct path
 	public static Path FILE_DIR = Paths.get(".");
-	
+
 	private OIDCClientInformation clientInformation;
 	private OIDCProviderMetadata providerMetadata;
+	private Defaults.AuthReqParams authReqParams;
 
 	public Client(String clientMetadataString, String issuer)
 			throws ParseException, URISyntaxException, IOException,
@@ -74,9 +70,13 @@ public class Client {
 		OIDCClientMetadata clientMetadata = OIDCClientMetadata
 				.parse(JSONObjectUtils.parse(clientMetadataString));
 
+		authReqParams = Defaults
+				.getDefaultForAuthReq(AuthReqDefault.SCOPE_BEHAVIOR);
+
 		providerMetadata = getProviderConfig(issuer);
-		clientInformation = doClientRegistration(clientMetadata,
-				providerMetadata);
+		clientInformation = Defaults.getDefaultForRegistrationReq(
+				clientMetadata, providerMetadata,
+				RegistrationReqDefault.DYNAMIC);
 	}
 
 	private OIDCProviderMetadata getProviderConfig(String issuer)
@@ -95,39 +95,11 @@ public class Client {
 		return providerMetadata;
 	}
 
-	private OIDCClientInformation doClientRegistration(
-			OIDCClientMetadata metadata, OIDCProviderMetadata providerMetadata)
-			throws ParseException, SerializeException, IOException {
-		// Make registration request
-		OIDCClientRegistrationRequest registrationRequest = new OIDCClientRegistrationRequest(
-				providerMetadata.getRegistrationEndpointURI(), metadata, null);
-		HTTPResponse regHTTPResponse = registrationRequest.toHTTPRequest()
-				.send();
-
-		// Parse and check response
-		ClientRegistrationResponse registrationResponse = OIDCClientRegistrationResponseParser
-				.parse(regHTTPResponse);
-
-		if (registrationResponse instanceof ClientRegistrationErrorResponse) {
-			ErrorObject error = ((ClientRegistrationErrorResponse) registrationResponse)
-					.getErrorObject();
-			// TODO error handling
-			System.err.println(error.getCode() + ": " + error.getDescription());
-			System.exit(-1);
-		}
-
-		// Store client information from OP
-		OIDCClientInformation clientInformation = ((OIDCClientInformationResponse) registrationResponse)
-				.getOIDCClientInformation();
-		return clientInformation;
-	}
-
 	public String authenticate(Request req, Response res)
 			throws URISyntaxException, SerializeException {
 		// session object that can be used to store store state between requests
 		Session session = req.session();
-		URI redirectURI = new URI("http://localhost:8090/code_flow_callback");
-		String login_url = doAuthReq(session, redirectURI);
+		String login_url = doAuthReq(session, authReqParams);
 		res.redirect(login_url); // Redirect the user to the provider
 		return null;
 	}
@@ -138,16 +110,17 @@ public class Client {
 		String url = req.url() + "?" + req.raw().getQueryString();
 
 		// TODO parse authentication response from url
-		AuthenticationSuccessResponse authResp = parseAuthResp(req.session(), url);
+		AuthenticationSuccessResponse authResp = parseAuthResp(req.session(),
+				url);
 
 		// TODO make token request
-		OIDCAccessTokenResponse accessTokenResp = makeTokenReq(
+		OIDCAccessTokenResponse accessTokenResp = doTokenReq(
 				authResp.getAuthorizationCode(),
 				req.session().attribute("redirect_uri"));
 		// TODO verify the id token
 		JWT idToken = accessTokenResp.getIDToken();
 		// TODO make userinfo request
-		UserInfoSuccessResponse userInfoClaims = makeUserInfoReq(accessTokenResp
+		UserInfoSuccessResponse userInfoClaims = doUserInfoReq(accessTokenResp
 				.getAccessToken());
 		ReadOnlyJWTClaimsSet idTokenClaims = null;
 		try {
@@ -166,26 +139,36 @@ public class Client {
 				idTokenClaims, userInfoResponse);
 	}
 
-	public String repostFragment(Request req, Response res) throws IOException {
-		// TODO Rebecka: req.body(); vs. req.attributes(); for POST body
-
+	public String implicitFlowCallback(Request req, Response res)
+			throws IOException {
 		// Callback redirect URI
-		String url = req.url() + "#" + req.attribute("url_fragment");
+		String url = req.url() + "#" + req.queryParams("url_fragment");
 
 		// TODO parse authentication response from url
+		AuthenticationSuccessResponse authResp = parseAuthResp(req.session(),
+				url);
 
-		// TODO set the appropriate values
-		AccessToken accessToken = null;
-		String parsedIdToken = null;
+		// TODO verify the id token
+		JWT idToken = authResp.getIDToken();
 		ReadOnlyJWTClaimsSet idTokenClaims = null;
-		return WebServer.successPage(null, accessToken, parsedIdToken,
+		try {
+			idTokenClaims = verifyIdToken(idToken);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		AuthorizationCode authCode = authResp.getAuthorizationCode();
+		AccessToken accessToken = authResp.getAccessToken();
+		String parsedIdToken = idToken.getParsedString();
+		return WebServer.successPage(authCode, accessToken, parsedIdToken,
 				idTokenClaims, null);
 	}
 
-	private String doAuthReq(Session session, URI redirectURI)
-			throws SerializeException {
-		session.attribute("redirect_uri", redirectURI);
-		
+	private String doAuthReq(Session session,
+			Defaults.AuthReqParams authReqParams) throws SerializeException {
+		session.attribute("redirect_uri", authReqParams.redirectURI);
+
 		// Generate random state string for pairing the response to the request
 		State state = new State();
 		session.attribute("state", state);
@@ -194,29 +177,18 @@ public class Client {
 		Nonce nonce = new Nonce();
 		session.attribute("nonce", nonce);
 
-		// Specify scope
-		Scope scope = Scope.parse("openid who_am_i");
-
 		// Compose the request
-		// ResponseType rt = new ResponseType(OIDCResponseTypeValue.ID_TOKEN,
-		// ResponseType.Value.TOKEN);
-		ResponseType rt = new ResponseType(ResponseType.Value.CODE);
 		AuthenticationRequest.Builder authenticationRequest = new AuthenticationRequest.Builder(
-				rt, scope, clientInformation.getID(), redirectURI);
-
-		ClaimsRequest claims = new ClaimsRequest();
-		claims.addUserInfoClaim("given_name", ClaimRequirement.ESSENTIAL);
-		claims.addUserInfoClaim("family_name", ClaimRequirement.ESSENTIAL);
-		claims.addUserInfoClaim("nickname");
-		claims.addIDTokenClaim("email", ClaimRequirement.ESSENTIAL);
-		claims.addIDTokenClaim("phone_number");
+				authReqParams.respType, authReqParams.scope,
+				clientInformation.getID(), authReqParams.redirectURI);
 
 		authenticationRequest.state(state).nonce(nonce)
 				.endpointURI(providerMetadata.getAuthorizationEndpointURI());
-		// authenticationRequest.claims(claims).
+		if (authReqParams.claimsReq != null) {
+			authenticationRequest.claims(authReqParams.claimsReq);
+		}
 
 		URI authReqURI = authenticationRequest.build().toURI();
-		System.out.println(authReqURI);
 		return authReqURI.toString();
 	}
 
@@ -268,12 +240,13 @@ public class Client {
 		return null;
 	}
 
-	private OIDCAccessTokenResponse makeTokenReq(AuthorizationCode authCode,
+	private OIDCAccessTokenResponse doTokenReq(AuthorizationCode authCode,
 			URI redirectURI) {
 		TokenRequest tokenReq = new TokenRequest(
-				providerMetadata.getTokenEndpointURI(),
-				clientInformation.getID(), new AuthorizationCodeGrant(authCode,
-						redirectURI));
+				providerMetadata.getTokenEndpointURI(), new ClientSecretBasic(
+						clientInformation.getID(),
+						clientInformation.getSecret()),
+				new AuthorizationCodeGrant(authCode, redirectURI));
 
 		HTTPResponse tokenHTTPResp = null;
 		try {
@@ -293,7 +266,8 @@ public class Client {
 		if (tokenResponse instanceof TokenErrorResponse) {
 			ErrorObject error = ((TokenErrorResponse) tokenResponse)
 					.getErrorObject();
-			// TODO error handling
+			System.err.println(error);
+			System.exit(-1);
 		}
 
 		OIDCAccessTokenResponse accessTokenResponse = (OIDCAccessTokenResponse) tokenResponse;
@@ -302,7 +276,7 @@ public class Client {
 		return accessTokenResponse;
 	}
 
-	private UserInfoSuccessResponse makeUserInfoReq(AccessToken accessToken) {
+	private UserInfoSuccessResponse doUserInfoReq(AccessToken accessToken) {
 		UserInfoRequest userInfoReq = new UserInfoRequest(
 				providerMetadata.getUserInfoEndpointURI(),
 				(BearerAccessToken) accessToken);

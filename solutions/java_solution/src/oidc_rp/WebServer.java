@@ -8,7 +8,6 @@ import static spark.SparkBase.port;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
-import java.util.logging.Logger;
 
 import utils.FileHandling;
 
@@ -23,8 +22,7 @@ import com.nimbusds.openid.connect.sdk.UserInfoSuccessResponse;
 /**
  * Skeleton code for building an OpenID Connect Public Client.
  *
- * Using the nanohttpd library (https://github.com/NanoHttpd/nanohttpd) as the
- * webserver, and Nimbus OAauth
+ * Using the Spark (http://sparkjava.com/) as the webserver, and Nimbus OAauth
  * (http://connect2id.com/products/nimbus-oauth-openid-connect-sdk) for OpenID
  * Connect support.
  *
@@ -41,23 +39,8 @@ public class WebServer {
 	 * Issuer identifier (URL of the provider)
 	 */
 
-	public static String ISSUER = "https://dirg.org.umu.se:8092";
+	public static String ISSUER = "http://localhost:8000";
 
-	/**
-	 * Logger instance.
-	 */
-	private static Logger logger = Logger.getLogger(WebServer.class.getName());
-
-	/**
-	 * Constructor for the RP server.
-	 *
-	 * Loads the client metadata from file.
-	 *
-	 * @throws IOException
-	 * @throws URISyntaxException
-	 * @throws ParseException
-	 * @throws SerializeException
-	 */
 	public static void main(String[] args) throws ParseException, IOException,
 			URISyntaxException, SerializeException {
 		String jsonMetadata = FileHandling.readFromFile("client.json");
@@ -69,14 +52,14 @@ public class WebServer {
 		/*** Spark webserver routes ***/
 
 		/* displays the main page */
-		get("/", (req, res) -> loadPageFromFile("index.html"));
+		get("/", (req, res) -> FileHandling.readFromFile("index.html"));
 
 		/*
 		 * where the authentication response from the provider is received when
 		 * using implicit or hybrid flow
 		 */
 		get("/implicit_flow_callback",
-				(req, res) -> loadPageFromFile("repost_fragment.html"));
+				(req, res) -> FileHandling.readFromFile("repost_fragment.html"));
 
 		/*
 		 * starts authentication using the OpenID Connect code flow
@@ -93,9 +76,9 @@ public class WebServer {
 		 * where the fragment identifier is received after being parsed by the
 		 * client (using Javascript)
 		 */
-		post("/repost_fragment", client::repostFragment);
+		post("/repost_fragment", client::implicitFlowCallback);
 
-		/* default handling if a file a requested file can not be found */
+		/* default handling if a requested file can not be found */
 		exception(IOException.class, (e, request, response) -> {
 			response.status(404);
 			response.body("Resource not found: " + e);
@@ -103,7 +86,7 @@ public class WebServer {
 	}
 
 	/**
-	 * Build HTML summary of a successful authentication.
+	 * Build HTML summary of a successful authentication flow.
 	 *
 	 * @param authCode
 	 *            authorization code obtained from authentication response
@@ -135,20 +118,11 @@ public class WebServer {
 				userInfoString.append(userInfoResponse.getUserInfoJWT()
 						.getParsedString());
 			}
+		} else {
+			userInfoString.append("null");
 		}
 		String successPage = FileHandling.readFromFile("success_page.html");
 		return MessageFormat.format(successPage, authCode, accessToken,
 				idTokenString, userInfoString);
 	}
-
-	/**
-	 * Load a page from file.
-	 *
-	 * @return response containing the formatted HTML page.
-	 * @throws IOException
-	 */
-	private static String loadPageFromFile(String file) throws IOException {
-		return FileHandling.readFromFile(file);
-	}
-
 }

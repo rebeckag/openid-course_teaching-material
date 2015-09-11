@@ -1,10 +1,10 @@
-- name: copy local source
-  copy: src=../provider/ dest={{ provider_dir }}
+- name: fetch latest source
+  git: repo=https://github.com/rebeckag/openid-course_teaching-material dest={{ provider_dir }} version=HEAD
 
 - include: ../../../tasks/virtualenv.yml
   vars:
     virtualenv_dir: "{{ provider_virtualenv_dir }}"
-    source_dir: "{{ provider_dir }}"
+    source_dir: "{{ provider_source_dir }}"
 
 - name: create Upstart script
   template: src=provider-gunicorn-upstart.conf.j2

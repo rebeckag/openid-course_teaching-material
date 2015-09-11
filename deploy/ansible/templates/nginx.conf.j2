@@ -2,7 +2,7 @@ server {
     listen 80 default_server;
 
     location /static {
-        alias {{ provider_dir }}/static;
+        alias {{ provider_source_dir }}/static;
     }
 
     location / {

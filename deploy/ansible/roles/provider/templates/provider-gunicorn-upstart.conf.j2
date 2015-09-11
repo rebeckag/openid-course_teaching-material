@@ -5,7 +5,7 @@ stop on shutdown
 
 respawn
 
-chdir {{ provider_dir }}
+chdir {{ provider_dir }}/provider
 
 env OIDC_CLIENT_DB="{{ client_db }}"
 exec {{ provider_virtualenv_dir }}/bin/gunicorn \

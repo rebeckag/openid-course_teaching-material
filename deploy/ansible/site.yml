@@ -19,5 +19,15 @@
       file: src=/etc/nginx/sites-available/{{ host }}
              dest=/etc/nginx/sites-enabled/{{ host }} state=link
       become: yes
-      notify:
-        - restart nginx
+
+    - name: always restart nginx
+      service: name=nginx state=reloaded
+      become: yes
+
+    - name: always restart client_registration
+      service: name={{ client_registration_service }} state=restarted
+      become: yes
+
+    - name: always restart provider
+      service: name={{ provider_service }} state=restarted
+      become: yes

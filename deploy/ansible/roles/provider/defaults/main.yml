@@ -1,3 +1,4 @@
 provider_dir: /provider
+provider_source_dir: "{{ provider_dir }}/provider"
 provider_virtualenv_dir: /provider/virtualenv
 provider_service: provider-{{ host }}

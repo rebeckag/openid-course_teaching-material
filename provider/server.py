@@ -26,7 +26,7 @@ from oic.oic.provider import AuthorizationEndpoint
 from oic.oic.provider import TokenEndpoint
 from oic.oic.provider import UserinfoEndpoint
 from oic.oic.provider import RegistrationEndpoint
-from provider.course_provider import CourseProvider
+from course_provider import CourseProvider
 
 LOGGER = logging.getLogger("")
 LOGFILE_NAME = 'oc.log'

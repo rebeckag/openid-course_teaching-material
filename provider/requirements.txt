@@ -1,4 +1,4 @@
 git+https://github.com/rohe/pyjwkest
-git+https://github.com/rohe/pyoidc
+git+https://github.com/rebeckag/pyoidc@shelve_wrapper_fix
 gunicorn==19.3.0
 PyYAML==3.11

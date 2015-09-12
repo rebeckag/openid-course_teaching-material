@@ -6,10 +6,8 @@ from .client import Client, read_from_file
 
 
 class RPServer(object):
-    ISSUER = "http://localhost:8000"
-
     def __init__(self):
-        self.client = Client(json.loads(read_from_file("client.json")), RPServer.ISSUER)
+        self.client = Client(json.loads(read_from_file("client.json")))
 
     @cherrypy.expose
     def index(self):

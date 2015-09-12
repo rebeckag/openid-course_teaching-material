@@ -13,11 +13,12 @@ __author__ = 'regu0004'
 
 class Client(object):
     ROOT_PATH = "/Users/regu0004/dev/oidc_course/"
+    ISSUER = "http://localhost:8000"
 
-    def __init__(self, client_metadata, issuer_url):
+    def __init__(self, client_metadata):
         self.client = OIDCClient(client_authn_method=CLIENT_AUTHN_METHOD)
 
-        self.provider_info = self.client.provider_config(issuer_url)
+        self.provider_info = self.client.provider_config(Client.ISSUER)
 
         static = False
         if static:

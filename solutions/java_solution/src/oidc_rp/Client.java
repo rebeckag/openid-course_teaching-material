@@ -58,7 +58,7 @@ import com.nimbusds.openid.connect.sdk.util.DefaultJWTDecoder;
 
 public class Client {
 	// TODO specify the correct path
-	public static Path FILE_DIR = Paths.get(".");
+	public static Path ROOT_PATH = Paths.get(".");
 
 	private OIDCClientInformation clientInformation;
 	private OIDCProviderMetadata providerMetadata;

@@ -1,5 +1,8 @@
 server {
-    listen 80 default_server;
+    listen 443 ssl;
+    ssl_certificate {{ ssl_cert }};
+    ssl_certificate_key {{ ssl_key }};
+    server_name {{ host }};
 
     location /static {
         alias {{ provider_source_dir }}/static;

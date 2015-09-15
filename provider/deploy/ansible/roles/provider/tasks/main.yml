@@ -6,6 +6,12 @@
     virtualenv_dir: "{{ provider_virtualenv_dir }}"
     source_dir: "{{ provider_source_dir }}"
 
+- name: create config.yaml
+  template: src=config.yaml.j2
+            dest="{{ provider_source_dir }}/config.yaml"
+  notify:
+    - restart provider
+
 - name: create Upstart script
   template: src=provider-gunicorn-upstart.conf.j2
             dest=/etc/init/{{ provider_service }}.conf

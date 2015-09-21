@@ -2,7 +2,7 @@
   apt_repository: repo=ppa:nginx/stable
 
 - name: install required packages
-  apt: pkg=nginx,git,libffi-dev,libssl-dev
+  apt: pkg=nginx,git,libffi-dev,libssl-dev,build-essential
 
 - name: install Python 3.4.3
   script: install_python_3-4-3.sh creates=/python3.4.3

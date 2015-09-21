@@ -5,9 +5,11 @@
     - {role: client_registration, sudo: yes }
 
   vars:
-    host: localhost
+    host: "{{ inventory_hostname }}"
     client_registration_vhost: /client_registration
     client_db: "{{ provider_dir}}/client_db"
+    ssl_cert: "{{ ssl_dir }}/{{ host }}.pem"
+    ssl_key: "{{ ssl_dir }}/{{ host }}.key"
 
   tasks:
     - name: add nginx config to sites-available

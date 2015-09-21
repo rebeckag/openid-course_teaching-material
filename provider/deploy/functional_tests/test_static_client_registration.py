@@ -1,3 +1,7 @@
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 from urllib.parse import urlparse
 
 from oic.oic.message import AuthorizationRequest, AuthorizationResponse, IdToken
@@ -47,7 +51,10 @@ def test_static_client_registration(server_url, provider_info, browser):
 
 
 def get_client_credentials_from_page(browser):
-    list = browser.find_element_by_xpath("/html/body/div[1]/ul")
+    success_message_element = WebDriverWait(browser, 10).until(
+        EC.visibility_of_element_located((By.CLASS_NAME, "alert-success")))
+    list = success_message_element.find_element_by_tag_name("ul")
+
     client_credentials = {}
     for element in list.find_elements_by_tag_name("li"):
         try:

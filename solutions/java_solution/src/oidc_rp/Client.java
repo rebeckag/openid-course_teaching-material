@@ -2,6 +2,7 @@ package oidc_rp;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -21,6 +22,7 @@ import spark.Response;
 import spark.Session;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWT;
@@ -51,6 +53,7 @@ import com.nimbusds.openid.connect.sdk.UserInfoErrorResponse;
 import com.nimbusds.openid.connect.sdk.UserInfoRequest;
 import com.nimbusds.openid.connect.sdk.UserInfoResponse;
 import com.nimbusds.openid.connect.sdk.UserInfoSuccessResponse;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientInformation;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
@@ -59,21 +62,22 @@ import com.nimbusds.openid.connect.sdk.util.DefaultJWTDecoder;
 public class Client {
 	// TODO specify the correct path
 	public static Path ROOT_PATH = Paths.get(".");
+	public static String ISSUER = "http://localhost";
 
 	private OIDCClientInformation clientInformation;
 	private OIDCProviderMetadata providerMetadata;
 	private Defaults.AuthReqParams authReqParams;
 
-	public Client(String clientMetadataString, String issuer)
-			throws ParseException, URISyntaxException, IOException,
-			SerializeException {
+	public Client(String clientMetadataString) throws ParseException,
+			URISyntaxException, IOException, SerializeException {
 		OIDCClientMetadata clientMetadata = OIDCClientMetadata
 				.parse(JSONObjectUtils.parse(clientMetadataString));
+		clientMetadata.setUserInfoJWSAlg(JWSAlgorithm.RS256);
 
 		authReqParams = Defaults
 				.getDefaultForAuthReq(AuthReqDefault.SCOPE_BEHAVIOR);
 
-		providerMetadata = getProviderConfig(issuer);
+		providerMetadata = getProviderConfig(ISSUER);
 		clientInformation = Defaults.getDefaultForRegistrationReq(
 				clientMetadata, providerMetadata,
 				RegistrationReqDefault.DYNAMIC);
@@ -124,8 +128,10 @@ public class Client {
 				.getAccessToken());
 		ReadOnlyJWTClaimsSet idTokenClaims = null;
 		try {
-			idTokenClaims = verifyIdToken(idToken);
-		} catch (ParseException e) {
+			idTokenClaims = verifySignedJWT(idToken);
+		} catch (ParseException | NoSuchAlgorithmException
+				| InvalidKeySpecException | java.text.ParseException
+				| JOSEException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -152,8 +158,10 @@ public class Client {
 		JWT idToken = authResp.getIDToken();
 		ReadOnlyJWTClaimsSet idTokenClaims = null;
 		try {
-			idTokenClaims = verifyIdToken(idToken);
-		} catch (ParseException e) {
+			idTokenClaims = verifySignedJWT(idToken);
+		} catch (ParseException | NoSuchAlgorithmException
+				| InvalidKeySpecException | java.text.ParseException
+				| JOSEException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -192,28 +200,18 @@ public class Client {
 		return authReqURI.toString();
 	}
 
-	private ReadOnlyJWTClaimsSet verifyIdToken(JWT idToken)
-			throws ParseException {
+	private ReadOnlyJWTClaimsSet verifySignedJWT(JWT jwt)
+			throws ParseException, MalformedURLException, IOException,
+			NoSuchAlgorithmException, InvalidKeySpecException,
+			java.text.ParseException, JOSEException {
 		RSAPublicKey providerKey = null;
-		try {
-			JSONObject key = getProviderRSAJWK(providerMetadata.getJWKSetURI()
-					.toURL().openStream());
-			providerKey = RSAKey.parse(key).toRSAPublicKey();
-		} catch (NoSuchAlgorithmException | InvalidKeySpecException
-				| IOException | java.text.ParseException e) {
-			// TODO error handling
-		}
+		JSONObject key = getProviderRSAJWK(providerMetadata.getJWKSetURI()
+				.toURL().openStream());
+		providerKey = RSAKey.parse(key).toRSAPublicKey();
 
 		DefaultJWTDecoder jwtDecoder = new DefaultJWTDecoder();
 		jwtDecoder.addJWSVerifier(new RSASSAVerifier(providerKey));
-		ReadOnlyJWTClaimsSet claims = null;
-		try {
-			claims = jwtDecoder.decodeJWT(idToken);
-		} catch (JOSEException | java.text.ParseException e) {
-			// TODO error handling
-		}
-
-		return claims;
+		return jwtDecoder.decodeJWT(jwt);
 	}
 
 	private JSONObject getProviderRSAJWK(InputStream is) throws ParseException {
@@ -302,7 +300,19 @@ public class Client {
 		}
 
 		UserInfoSuccessResponse successResponse = (UserInfoSuccessResponse) userInfoResponse;
-		JSONObject claims = successResponse.getUserInfo().toJSONObject();
+		if (successResponse.getUserInfoJWT() != null) { // Signed/encrypted userinfo
+			try {
+				ReadOnlyJWTClaimsSet claims = verifySignedJWT(successResponse.getUserInfoJWT());
+				UserInfo userinfo = UserInfo.parse(claims.toJSONObject().toJSONString());
+				UserInfoSuccessResponse resp = new UserInfoSuccessResponse(userinfo);
+				return resp;
+			} catch (ParseException | NoSuchAlgorithmException
+					| InvalidKeySpecException | IOException
+					| java.text.ParseException | JOSEException e) {
+				// TODO error handling
+			}
+		}
+		
 		return successResponse;
 	}
 

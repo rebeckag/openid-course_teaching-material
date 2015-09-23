@@ -21,10 +21,13 @@ class Client(object):
         self.provider_info = self.client.provider_config(Client.ISSUER)
 
         static = False
+        extra_registration_params = {"userinfo_signed_response_alg": "RS256"}
         if static:
             reg_info = RegistrationResponse(**{"client_id": "TODO", "client_secret": "TODO"})
             self.client.store_registration_info(reg_info)
         else:
+            if extra_registration_params:
+                client_metadata.update(extra_registration_params)
             self.client.register(self.provider_info["registration_endpoint"], **client_metadata)
 
     def authenticate(self, session):

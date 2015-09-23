@@ -19,7 +19,6 @@ HYBRID_FLOW = {
 }
 
 CLAIMS_BY_SCOPE = {
-
     "redirect_uri": "http://localhost:8090/code_flow_callback",
     "scope": "openid profile",
     "response_type": "code"

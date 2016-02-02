@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Date;
 import java.util.Scanner;
 
 import net.minidev.json.JSONArray;
@@ -109,7 +110,7 @@ public class Client {
 	}
 
 	public String codeFlowCallback(Request req, Response res)
-			throws IOException {
+			throws IOException, java.text.ParseException {
 		// Callback redirect URI
 		String url = req.url() + "?" + req.raw().getQueryString();
 
@@ -123,15 +124,15 @@ public class Client {
 				req.session().attribute("redirect_uri"));
 		// TODO verify the id token
 		JWT idToken = accessTokenResp.getIDToken();
+
 		// TODO make userinfo request
 		UserInfoSuccessResponse userInfoClaims = doUserInfoReq(accessTokenResp
 				.getAccessToken());
 		ReadOnlyJWTClaimsSet idTokenClaims = null;
 		try {
-			idTokenClaims = verifySignedJWT(idToken);
-		} catch (ParseException | NoSuchAlgorithmException
-				| InvalidKeySpecException | java.text.ParseException
-				| JOSEException e) {
+			idTokenClaims = validateIdToken(idToken.getJWTClaimsSet(), req
+					.session().attribute("nonce"));
+		} catch (java.text.ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -158,7 +159,8 @@ public class Client {
 		JWT idToken = authResp.getIDToken();
 		ReadOnlyJWTClaimsSet idTokenClaims = null;
 		try {
-			idTokenClaims = verifySignedJWT(idToken);
+			idTokenClaims = validateIdToken(verifySignedJWT(idToken), req
+					.session().attribute("nonce"));
 		} catch (ParseException | NoSuchAlgorithmException
 				| InvalidKeySpecException | java.text.ParseException
 				| JOSEException e) {
@@ -300,11 +302,15 @@ public class Client {
 		}
 
 		UserInfoSuccessResponse successResponse = (UserInfoSuccessResponse) userInfoResponse;
-		if (successResponse.getUserInfoJWT() != null) { // Signed/encrypted userinfo
+		if (successResponse.getUserInfoJWT() != null) { // Signed/encrypted
+														// userinfo
 			try {
-				ReadOnlyJWTClaimsSet claims = verifySignedJWT(successResponse.getUserInfoJWT());
-				UserInfo userinfo = UserInfo.parse(claims.toJSONObject().toJSONString());
-				UserInfoSuccessResponse resp = new UserInfoSuccessResponse(userinfo);
+				ReadOnlyJWTClaimsSet claims = verifySignedJWT(successResponse
+						.getUserInfoJWT());
+				UserInfo userinfo = UserInfo.parse(claims.toJSONObject()
+						.toJSONString());
+				UserInfoSuccessResponse resp = new UserInfoSuccessResponse(
+						userinfo);
 				return resp;
 			} catch (ParseException | NoSuchAlgorithmException
 					| InvalidKeySpecException | IOException
@@ -312,7 +318,7 @@ public class Client {
 				// TODO error handling
 			}
 		}
-		
+
 		return successResponse;
 	}
 
@@ -335,16 +341,25 @@ public class Client {
 		AuthenticationSuccessResponse successResponse = (AuthenticationSuccessResponse) authResp;
 
 		// Don't forget to check the state
-		if (!verifyState(session, successResponse.getState())) {
-			// TODO proper error handling
-		}
+		assert successResponse.getState().equals(session.attribute("state"));
 
 		AuthorizationCode authCode = successResponse.getAuthorizationCode();
 		return successResponse;
 	}
 
-	private boolean verifyState(Session session, State actual) {
-		State expected = session.attribute("state");
-		return expected.equals(actual);
+	private ReadOnlyJWTClaimsSet validateIdToken(ReadOnlyJWTClaimsSet idToken,
+			Nonce nonce) {
+		assert idToken.getIssuer().equals(providerMetadata.getIssuer());
+		assert idToken.getAudience().contains(clientInformation.getID());
+		if (idToken.getAudience().size() > 1) {
+			Object azp = idToken.getClaim("azp");
+			assert azp != null;
+			assert clientInformation.getID().equals(azp);
+		}
+		Date now = new Date();
+		assert idToken.getExpirationTime().after(now);
+		assert idToken.getClaim("nonce").equals(nonce);
+
+		return idToken;
 	}
 }

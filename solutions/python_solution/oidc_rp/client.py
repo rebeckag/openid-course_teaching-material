@@ -3,7 +3,7 @@ import os
 from oic.oauth2 import rndstr
 from oic.oic import Client as OIDCClient
 from oic.oic.message import AuthorizationResponse, RegistrationResponse
-
+from oic.utils import time_util
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 
 from .defaults import SCOPE_BEHAVIOR
@@ -49,7 +49,7 @@ class Client(object):
         assert auth_response["state"] == session["state"]
 
         token_response = self.make_token_request(auth_response["code"], session["state"])
-        assert token_response["id_token"]["nonce"] == session["nonce"]
+        self.validate_id_token(token_response["id_token"], session["nonce"])
 
         userinfo = self.make_userinfo_request(token_response["access_token"])
 
@@ -59,20 +59,12 @@ class Client(object):
     def implicit_flow_callback(self, auth_response, session):
         auth_response = self.parse_authentication_response(auth_response)
 
-        assert auth_response["id_token"]["nonce"] == session["nonce"]
+        self.validate_id_token(auth_response["id_token"], session["nonce"])
 
-        try:
-            access_code = auth_response["code"]
-        except KeyError:
-            access_code = None
+        access_code = auth_response.get("code")
+        access_token = auth_response.get("access_token")
 
-        try:
-            access_token = auth_response["access_token"]
-        except KeyError:
-            access_token = None
-
-        return success_page(access_code, access_token,
-                            auth_response["id_token"], None)
+        return success_page(access_code, access_token, auth_response["id_token"], None)
 
     def parse_authentication_response(self, auth_response):
         auth_response = self.client.parse_response(AuthorizationResponse, info=auth_response,
@@ -94,6 +86,17 @@ class Client(object):
     def make_userinfo_request(self, access_token):
         userinfo_response = self.client.do_user_info_request(access_token=access_token)
         return userinfo_response
+
+    def validate_id_token(self, id_token, nonce):
+        """http://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation"""
+        # see oic.Client.verify_id_token
+        assert id_token["iss"] == self.client.provider_info["issuer"]
+        assert self.client.client_id in id_token["aud"]
+        if len(id_token["aud"]) > 1:
+            assert "azp" in id_token and id_token["azp"] == self.client.client_id
+
+        assert time_util.utc_time_sans_frac() < id_token["exp"]
+        assert id_token["nonce"] == nonce
 
 
 def success_page(auth_code, access_token, id_token_claims, userinfo):

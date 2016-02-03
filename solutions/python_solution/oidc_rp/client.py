@@ -58,6 +58,7 @@ class Client(object):
 
     def implicit_flow_callback(self, auth_response, session):
         auth_response = self.parse_authentication_response(auth_response)
+        assert auth_response["state"] == session["state"]
 
         self.validate_id_token(auth_response["id_token"], session["nonce"])
 

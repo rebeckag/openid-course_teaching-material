@@ -1,4 +1,3 @@
-git+https://github.com/rohe/pyjwkest
-git+https://github.com/rohe/pyoidc
+oic==0.8.1
 gunicorn==19.3.0
 PyYAML==3.11

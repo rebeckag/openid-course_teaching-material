@@ -11,7 +11,7 @@ import os
 import yaml
 from mako.lookup import TemplateLookup
 from oic.oauth2 import rndstr
-from oic.utils import shelve_wrapper, elements_to_unicode
+from oic.utils import shelve_wrapper
 from oic.utils.authn.client import verify_client
 from oic.utils.authn.user import UsernamePasswordMako
 from oic.utils.authz import AuthzHandling
@@ -243,7 +243,7 @@ def setup():
     public_keys = []
     for keybundle in OAS.keyjar[""]:
         for key in keybundle.keys():
-            public_keys.append(elements_to_unicode(key.serialize()))
+            public_keys.append(key.serialize())
     public_jwks = {"keys": public_keys}
     filename = "static/jwks.json"
     with open(filename, "w") as f:

@@ -1,5 +1,5 @@
 - name: fetch latest source
-  git: repo=https://github.com/rebeckag/openid-course_teaching-material dest={{ provider_dir }} version=HEAD force=yes
+  git: repo=https://github.com/rebeckag/openid-course_teaching-material dest={{ provider_dir }} version=cbb1980 force=yes
 
 - include: ../../../tasks/virtualenv.yml
   vars:

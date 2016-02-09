@@ -2,7 +2,7 @@
   file: path={{ client_registration_dir }} state=directory
 
 - name: fetch latest source
-  git: repo=https://github.com/its-dirg/oicscrs dest={{ client_registration_dir }} version=HEAD
+  git: repo=https://github.com/its-dirg/oicscrs dest={{ client_registration_dir }} version=6d50877
 
 - name: setup virtualenv
   include: ../../../tasks/virtualenv.yml

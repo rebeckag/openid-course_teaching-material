@@ -23,7 +23,7 @@ def test_provider_static_files(provider_info):
 def test_dynamic_client(provider_info, browser):
     redirect_uri = "http://localhost"
     # Dynamic registration
-    reg_req = RegistrationRequest(**{"redirect_uris": [redirect_uri]})
+    reg_req = RegistrationRequest(**{"redirect_uris": [redirect_uri], "response_types": ["id_token"]})
     resp = requests.post(reg_req.request(provider_info["registration_endpoint"]))
     reg_resp = RegistrationResponse().from_json(resp.text)
 

@@ -28,17 +28,8 @@ from oic.oic.provider import UserinfoEndpoint
 from oic.oic.provider import RegistrationEndpoint
 from course_provider import CourseProvider
 
-LOGGER = logging.getLogger("")
-LOGFILE_NAME = 'oc.log'
-hdlr = logging.FileHandler(LOGFILE_NAME)
-base_formatter = logging.Formatter(
-    "%(asctime)s %(name)s:%(levelname)s %(message)s")
-
-CPC = ('%(asctime)s %(name)s:%(levelname)s '
-       '[%(client)s,%(path)s,%(cid)s] %(message)s')
-cpc_formatter = logging.Formatter(CPC)
-
-hdlr.setFormatter(base_formatter)
+LOGGER = logging.getLogger("oic")
+hdlr = logging.StreamHandler(sys.stdout)
 LOGGER.addHandler(hdlr)
 LOGGER.setLevel(logging.DEBUG)
 
@@ -96,7 +87,6 @@ def userinfo(environ, start_response, logger):
 # noinspection PyUnusedLocal
 def op_info(environ, start_response, logger):
     _oas = environ["oic.oas"]
-    LOGGER.info("op_info")
     return wsgi_wrapper(environ, start_response, _oas.providerinfo_endpoint,
                         logger=logger)
 

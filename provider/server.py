@@ -200,7 +200,7 @@ def setup():
     ac = AuthnBroker()
 
     authn = UsernamePasswordMako(
-        None, "login.mako", LOOKUP, PASSWD, "{}/authorization".format(issuer))
+            None, "login.mako", LOOKUP, PASSWD, "{}/authorization".format(issuer))
     ac.add("password", authn)
     URLS.append((r'^verify', make_auth_verify(authn.verify)))
 
@@ -247,7 +247,7 @@ config = setup()
 wsgi = bytes_middleware(application)
 
 if __name__ == "__main__":
-    from wsgiref.simple_server import make_server
+    from werkzeug.serving import run_simple
     from werkzeug.wsgi import SharedDataMiddleware
 
     app = SharedDataMiddleware(wsgi, {
@@ -257,8 +257,4 @@ if __name__ == "__main__":
     host = urlparse(config["baseurl"]).netloc
     port = int(host.split(":", 1)[1])
 
-    httpd = make_server('', port, app)
-    print("Serving HTTP on port {}...".format(port))
-
-    # Respond to requests until process is killed
-    httpd.serve_forever()
+    run_simple('0.0.0.0', port, app, ssl_context='adhoc')

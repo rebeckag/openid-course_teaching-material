@@ -248,7 +248,7 @@ def setup():
     filename = "static/jwks.json"
     with open(filename, "w") as f:
         f.write(json.dumps(public_jwks))
-    OAS.jwks_uri.append("%s/%s" % (OAS.baseurl, filename))
+    OAS.jwks_uri = "{}/{}".format(OAS.baseurl, filename)
 
     return config
 

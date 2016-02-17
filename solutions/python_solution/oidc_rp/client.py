@@ -6,14 +6,14 @@ from oic.oic.message import AuthorizationResponse, RegistrationResponse
 from oic.utils import time_util
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 
-from .defaults import SCOPE_BEHAVIOR
+from .defaults import IMPLICIT_FLOW
 
 __author__ = 'regu0004'
 
 
 class Client(object):
     ROOT_PATH = "/Users/regu0004/dev/oidc_course/"
-    ISSUER = "http://localhost:8000"
+    ISSUER = "http://192.168.99.1:8000"
 
     def __init__(self, client_metadata):
         self.client = OIDCClient(client_authn_method=CLIENT_AUTHN_METHOD)
@@ -31,7 +31,7 @@ class Client(object):
             self.client.register(self.provider_info["registration_endpoint"], **client_metadata)
 
     def authenticate(self, session):
-        request_args = SCOPE_BEHAVIOR
+        request_args = IMPLICIT_FLOW
 
         session["state"] = rndstr()
         session["nonce"] = rndstr()

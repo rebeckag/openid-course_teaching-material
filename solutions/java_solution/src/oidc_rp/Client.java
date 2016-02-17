@@ -62,8 +62,8 @@ import com.nimbusds.openid.connect.sdk.util.DefaultJWTDecoder;
 
 public class Client {
 	// TODO specify the correct path
-	public static Path ROOT_PATH = Paths.get(".");
-	public static String ISSUER = "http://localhost";
+	public static Path ROOT_PATH = Paths.get("/Users/regu0004/Downloads/openid_course-master");
+	public static String ISSUER = "https://op1.test.inacademia.org";
 
 	private OIDCClientInformation clientInformation;
 	private OIDCProviderMetadata providerMetadata;
